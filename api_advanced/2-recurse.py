@@ -1,16 +1,24 @@
 #!/usr/bin/python3
-"""
-2-main
-"""
-import sys
+""" 2-recurse.py """
+import requests
 
-if __name__ == '__main__':
-    recurse = __import__('2-recurse').recurse
-    if len(sys.argv) < 2:
-        print("Please pass an argument for the subreddit to search.")
-    else:
-        result = recurse(sys.argv[1])
-        if result is not None:
-            print(len(result))
+
+def recurse(subreddit, hot_list=[], after=None):
+    """ returns list with titles of all hot articles in a subreddit """
+    url = 'https://www.reddit.com/r/{}/hot.json'.format(subreddit)
+    headers = {'User-Agent': 'MyBot/1.0'}
+    params = {"limit": 100, "after": after}
+    response = requests.get(
+                            url,
+                            headers=headers,
+                            params=params,
+                            allow_redirects=False)
+    if response.status_code == 200:
+        data = response.json()["data"]
+        hot_list += [post["data"]["title"] for post in data["children"]]
+        if data["after"] is None:
+            return hot_list
         else:
-            print("None")
+            return recurse(subreddit, hot_list, data["after"])
+    elif response.status_code == 404:
+        return None
